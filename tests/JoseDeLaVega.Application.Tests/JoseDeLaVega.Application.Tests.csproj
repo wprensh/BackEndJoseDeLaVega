@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\JoseDeLaVega.Application\JoseDeLaVega.Application.csproj" />
+    <ProjectReference Include="..\..\src\JoseDeLaVega.Infrastructure\JoseDeLaVega.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

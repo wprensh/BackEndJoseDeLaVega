@@ -123,9 +123,46 @@ Los enums viajan como texto (`"Cultural"`, `"Academica"`, ...).
 dotnet test
 ```
 
-## Pendiente antes de producción
+## Clave de administración
 
-- **Autenticación y autorización**: los endpoints de administración (crear/editar/eliminar noticias, listar y
-  responder PQRS) están abiertos. Protégelos con JWT/Entra ID y `RequireAuthorization()`.
-- Secretos fuera de `appsettings.json`.
-- Aplicar las migraciones desde el pipeline de despliegue (script SQL idempotente).
+Crear, editar y eliminar noticias, y listar o responder PQRS, exige el encabezado `X-Clave-Admin` con el valor
+de `Administracion:ClaveApi` (mínimo 16 caracteres). Sin la clave, la API solo muestra noticias publicadas.
+Si la clave no está configurada, nadie tiene acceso administrativo.
+
+En desarrollo la clave se guarda con *user-secrets* (fuera del repositorio):
+
+```bash
+dotnet user-secrets set "Administracion:ClaveApi" "una-clave-larga-y-privada" --project src/JoseDeLaVega.Api
+dotnet user-secrets list --project src/JoseDeLaVega.Api
+```
+
+## Despliegue en Render + Neon
+
+El repositorio incluye `Dockerfile` y `render.yaml` (Blueprint).
+
+1. **Base de datos:** crear una cuenta en [neon.com](https://neon.com), un proyecto en la región *AWS US East
+   (N. Virginia)* y copiar la *connection string* (`postgresql://...`).
+2. **API:** en [render.com](https://render.com), *New → Blueprint*, conectar este repositorio de GitHub.
+3. Cuando Render lo pida, pegar la cadena de Neon en `ConnectionStrings__DefaultConnection`. Se acepta tal cual,
+   en formato URL.
+4. Al terminar el despliegue, la API queda en `https://josedelavega-api.onrender.com`. Al arrancar aplica las
+   migraciones y carga los datos iniciales.
+5. La clave de administración la genera Render: *Environment → Administracion__ClaveApi*. Esa clave se escribe en
+   el panel `/admin/noticias` del sitio.
+6. Si Render asigna otra dirección, actualizar `apiBaseUrl` en `src/environments/environment.ts` del frontend.
+
+Variables de entorno (definidas en `render.yaml`):
+
+| Variable | Uso |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | Cadena de conexión de PostgreSQL (Neon) |
+| `Administracion__ClaveApi` | Clave del panel administrativo |
+| `Cors__OrigenesPermitidos__0` | Sitio que puede llamar a la API (`https://wprensh.github.io`) |
+| `Database__AplicarMigraciones` | `true`: aplica migraciones al arrancar |
+| `DetrasDeProxy` | `true`: confía en `X-Forwarded-For` del proxy de Render para la IP real |
+
+## Pendiente
+
+- Inicio de sesión por usuario (JWT o Microsoft Entra ID, aprovechando el Microsoft 365 del colegio) en lugar de
+  una clave compartida.
+- Actualizar a .NET 10 (LTS): el soporte de .NET 9 termina el 10 de noviembre de 2026.

@@ -1,0 +1,30 @@
+# Blueprint de Render: crea el servicio de la API a partir de este repositorio.
+# En Render: New > Blueprint > conectar el repositorio BackEndJoseDeLaVega.
+# Render pedirá el valor de las variables marcadas con sync: false.
+services:
+  - type: web
+    name: josedelavega-api
+    runtime: docker
+    plan: starter            # USD 7/mes, siempre encendido. Para una prueba sin costo: free.
+    region: virginia         # La región de Render más cercana a Colombia.
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true         # Cada push a main vuelve a desplegar.
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: PORT
+        value: "8080"
+      # Cadena de conexión de Neon, pegada tal cual (postgresql://...).
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # Clave del panel de noticias y de las PQRS. Render la genera; se consulta en Environment.
+      - key: Administracion__ClaveApi
+        generateValue: true
+      # Sitio que puede llamar a la API (GitHub Pages). Agregar __1 con el dominio propio cuando exista.
+      - key: Cors__OrigenesPermitidos__0
+        value: https://wprensh.github.io
+      - key: Database__AplicarMigraciones
+        value: "true"
+      - key: DetrasDeProxy
+        value: "true"

@@ -5,6 +5,7 @@ using JoseDeLaVega.Api.Infrastructure;
 using JoseDeLaVega.Application;
 using JoseDeLaVega.Infrastructure;
 using JoseDeLaVega.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -28,6 +29,24 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // ---------- OpenAPI nativo de .NET 9 (sin Swashbuckle) ----------
 builder.Services.AddOpenApi();
+
+// ---------- Clave de administración (panel de noticias y PQRS) ----------
+builder.Services.Configure<OpcionesAdministracion>(builder.Configuration.GetSection(OpcionesAdministracion.Seccion));
+
+// ---------- Hosting detrás de un proxy (Render, Azure, etc.) ----------
+// El proxy termina el HTTPS y reenvía la IP real del visitante en X-Forwarded-For.
+// Sin esto, todas las visitas parecerían venir de la misma IP y compartirían el límite del formulario PQRS.
+var detrasDeProxy = builder.Configuration.GetValue<bool>("DetrasDeProxy");
+if (detrasDeProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1; // Solo se confía en el último salto, el que agrega el proxy.
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
 
 // ---------- CORS para el frontend Angular ----------
 const string FrontendCorsPolicy = "frontend";
@@ -58,6 +77,11 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+if (detrasDeProxy)
+{
+    app.UseForwardedHeaders();
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -66,19 +90,26 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();                       // /openapi/v1.json
     app.MapScalarApiReference(options =>    // /scalar/v1 : documentación interactiva
         options.WithTitle("API I.E. José de la Vega"));
-
-    // En desarrollo aplica las migraciones pendientes al arrancar (y ejecuta la siembra de EF Core 9).
-    // En producción se recomienda ejecutar las migraciones en el pipeline de despliegue.
-    await using var scope = app.Services.CreateAsyncScope();
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
 }
 else
 {
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Migraciones pendientes (y siembra de EF Core 9) al arrancar: siempre en desarrollo,
+// y en producción cuando se activa Database__AplicarMigraciones=true (servidor único, como en Render).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AplicarMigraciones"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+// Detrás de un proxy el HTTPS ya lo resuelve el proxy; redirigir aquí rompería sus chequeos de salud internos.
+if (!detrasDeProxy)
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors(FrontendCorsPolicy);
 app.UseRateLimiter();
 

@@ -1,3 +1,4 @@
+using JoseDeLaVega.Api.Infrastructure;
 using JoseDeLaVega.Application.Common;
 using JoseDeLaVega.Application.Pqrs;
 using JoseDeLaVega.Domain.Pqrs;
@@ -20,13 +21,16 @@ internal static class PqrsEndpoints
             .WithSummary("Radica una petición, queja, reclamo o sugerencia.")
             .RequireRateLimiting(RateLimitPolicy);
 
+        // Contienen datos personales (Ley 1581): solo con la clave de administración.
         group.MapGet("/", ListarAsync)
             .WithName("ListarPqrs")
-            .WithSummary("Lista las solicitudes PQRS (panel administrativo).");
+            .WithSummary("Lista las solicitudes PQRS (panel administrativo).")
+            .RequiereAdministrador();
 
         group.MapPut("/{id:guid}/respuesta", ResponderAsync)
             .WithName("ResponderPqrs")
-            .WithSummary("Registra la respuesta a una solicitud.");
+            .WithSummary("Registra la respuesta a una solicitud.")
+            .RequiereAdministrador();
 
         return app;
     }

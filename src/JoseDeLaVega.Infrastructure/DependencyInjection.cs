@@ -18,8 +18,9 @@ public static class DependencyInjection
     /// <summary>Registra EF Core + PostgreSQL, repositorios e interceptores.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringName)
-            ?? throw new InvalidOperationException($"Falta la cadena de conexión '{ConnectionStringName}'.");
+        var connectionString = CadenaConexion.Normalizar(
+            configuration.GetConnectionString(ConnectionStringName)
+            ?? throw new InvalidOperationException($"Falta la cadena de conexión '{ConnectionStringName}'."));
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<AuditoriaInterceptor>();
