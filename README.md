@@ -140,7 +140,7 @@ dotnet user-secrets list --project src/JoseDeLaVega.Api
 
 El repositorio incluye `Dockerfile` y `render.yaml` (Blueprint).
 
-1. **Base de datos:** crear una cuenta en [neon.com](https://neon.com), un proyecto en la región *AWS US East
+1. **Base de datos:** crear una cuenta en [neon.com](https://neon.com), un proyecto en la región *AWS US East 2
    (N. Virginia)* y copiar la *connection string* (`postgresql://...`).
 2. **API:** en [render.com](https://render.com), *New → Blueprint*, conectar este repositorio de GitHub.
 3. Cuando Render lo pida, pegar la cadena de Neon en `ConnectionStrings__DefaultConnection`. Se acepta tal cual,

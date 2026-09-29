@@ -6,7 +6,7 @@ services:
     name: josedelavega-api
     runtime: docker
     plan: starter            # USD 7/mes, siempre encendido. Para una prueba sin costo: free.
-    region: virginia         # La región de Render más cercana a Colombia.
+    region: ohio             # Misma región que la base de datos en Neon (AWS US East 2, Ohio).
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     autoDeploy: true         # Cada push a main vuelve a desplegar.
