@@ -5,7 +5,7 @@ services:
   - type: web
     name: josedelavega-api
     runtime: docker
-    plan: starter            # USD 7/mes, siempre encendido. Para una prueba sin costo: free.
+    plan: free               # Sin costo; se duerme tras 15 min sin visitas. Con presupuesto aprobado: starter (USD 7/mes).
     region: ohio             # Misma región que la base de datos en Neon (AWS US East 2, Ohio).
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
